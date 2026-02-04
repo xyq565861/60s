@@ -43,11 +43,11 @@ export class Common {
     return response
   }
 
-  static requireArguments(name: string | string[], ctx: RouterContext<any, Record<string, any>>) {
-    ctx.response.status = 400
+  static requireArguments(name: string | string[], response: RouterContext<any, Record<string, any>>['response']) {
+    response.status = 400
     const args = Array.isArray(name) ? name : [name]
 
-    ctx.response.body = Common.buildJson(
+    response.body = Common.buildJson(
       null,
       400,
       `参数 ${args.join(', ')} 不能为空。如为 query 参数，请进行必要的 URL 编码`,
@@ -185,23 +185,56 @@ export class Common {
     }
   }
 
+  static debug(...args: any[]) {
+    if (config.debug) {
+      console.log('[debug]', ...args)
+    }
+  }
+
   static async tryRepoUrl(options: { repo: string; path: string; branch?: string; alternatives?: string[] }) {
     const { repo, path, branch = 'main', alternatives = [] } = options
 
-    const urls = [
-      `https://raw.githubusercontent.com/${repo}/refs/heads/${branch}/${path}`,
-      `https://cdn.jsdelivr.net/gh/${repo}/${path}`,
-      `https://cdn.jsdmirror.com/gh/${repo}/${path}`,
-      ...alternatives,
-    ]
+    const urls = config.overseas_first
+      ? [
+          `https://raw.githubusercontent.com/${repo}/refs/heads/${branch}/${path}`,
+          `https://cdn.jsdelivr.net/gh/${repo}/${path}`,
+          ...alternatives,
+          `https://cdn.jsdmirror.com/gh/${repo}/${path}`,
+        ]
+      : [
+          `https://cdn.jsdmirror.com/gh/${repo}/${path}`,
+          `https://raw.githubusercontent.com/${repo}/refs/heads/${branch}/${path}`,
+          `https://cdn.jsdelivr.net/gh/${repo}/${path}`,
+          ...alternatives,
+        ]
 
     for (const url of urls) {
       try {
-        const response = await fetch(url)
-        if (response.ok) return response
-      } catch {}
+        Common.debug(`Trying URL: ${url}`)
+
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3_000)
+
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': Common.chromeUA,
+            'X-Real-IP': '157.255.219.143',
+            'X-Forwarded-For': '157.255.219.143',
+          },
+        })
+
+        clearTimeout(timeoutId)
+
+        if (response.ok) {
+          Common.debug(`Successful URL: ${url}`)
+          return response
+        }
+      } catch {
+        Common.debug(`Failed URL: ${url}`)
+      }
     }
 
-    throw new Error(`无法获取文件 ${path}，请稍后再试。`)
+    return null
   }
 }

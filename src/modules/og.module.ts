@@ -8,7 +8,7 @@ class ServiceOG {
       const url = await Common.getParam('url', ctx.request, true)
 
       if (!url) {
-        return Common.requireArguments('url', ctx)
+        return Common.requireArguments('url', ctx.response)
       }
 
       try {
@@ -17,6 +17,10 @@ class ServiceOG {
         switch (ctx.state.encoding) {
           case 'text':
             ctx.response.body = `标题: ${data.title}\n描述: ${data.description}`
+            break
+
+          case 'markdown':
+            ctx.response.body = `# 🔗 Open Graph 信息\n\n## [${data.title || '无标题'}](${url})\n\n${data.description ? `> ${data.description}\n\n` : ''}${data.image ? `![预览图](${data.image})` : '*无预览图*'}`
             break
 
           case 'json':
@@ -62,15 +66,62 @@ class ServiceOG {
       ogDescriptionPattern.exec(html),
     ]
 
-    const title = titleMatch?.groups?.title || ''
-    const image = imageMatch?.groups?.image || ''
-    const description = descriptionMatch?.groups?.description || ''
+    const title = this.decodeHtmlEntities(titleMatch?.groups?.title || '')
+    const image = this.decodeHtmlEntities(imageMatch?.groups?.image || '')
+    const description = this.decodeHtmlEntities(descriptionMatch?.groups?.description || '')
 
     return {
       title,
       image,
       description,
     }
+  }
+
+  decodeHtmlEntities(text: string): string {
+    const entities: Record<string, string> = {
+      '&nbsp;': ' ',
+      '&amp;': '&',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&apos;': "'",
+      '&cent;': '¢',
+      '&pound;': '£',
+      '&yen;': '¥',
+      '&euro;': '€',
+      '&copy;': '©',
+      '&reg;': '®',
+      '&sol;': '/',
+      '&quest;': '?',
+      '&equals;': '=',
+      '&num;': '#',
+      '&percnt;': '%',
+      '&plus;': '+',
+      '&colon;': ':',
+      '&semi;': ';',
+    }
+
+    return text.replace(/&[a-z0-9]+;|&#[0-9]+;|&#x[0-9a-f]+;/gi, (match) => {
+      // Named entities
+      if (entities[match.toLowerCase()]) {
+        return entities[match.toLowerCase()]
+      }
+
+      // Decimal numeric entities (&#123;)
+      if (match.startsWith('&#') && !match.startsWith('&#x')) {
+        const code = parseInt(match.slice(2, -1), 10)
+        return isNaN(code) ? match : String.fromCharCode(code)
+      }
+
+      // Hexadecimal numeric entities (&#x7B;)
+      if (match.startsWith('&#x')) {
+        const code = parseInt(match.slice(3, -1), 16)
+        return isNaN(code) ? match : String.fromCharCode(code)
+      }
+
+      return match
+    })
   }
 }
 

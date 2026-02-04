@@ -15,6 +15,13 @@ class ServiceBili {
             .join('\n')}`
           break
 
+        case 'markdown':
+          ctx.response.body = `# B站实时热搜\n\n${data
+            .slice(0, 20)
+            .map((e, i) => `${i + 1}. [${e.title}](${e.link})`)
+            .join('\n')}`
+          break
+
         case 'json':
         default:
           ctx.response.body = Common.buildJson(data)
@@ -24,13 +31,19 @@ class ServiceBili {
   }
 
   async #fetch() {
-    const options = { headers: { 'User-Agent': Common.chromeUA } }
+    const options = {
+      headers: {
+        'User-Agent': Common.chromeUA,
+        'X-Real-IP': '157.255.219.143',
+        'X-Forwarded-For': '157.255.219.143',
+      },
+    }
 
     try {
       const api = 'https://api.bilibili.com/x/web-interface/wbi/search/square?limit=50'
       const { data = {} } = await (await fetch(api, options)).json()
 
-      return (data?.trending?.list as Item[]).map((item) => {
+      return ((data?.trending?.list || []) as Item[]).map((item) => {
         return {
           title: item.keyword || item.show_name,
           link: `https://search.bilibili.com/all?keyword=${encodeURIComponent(item.keyword)}`,

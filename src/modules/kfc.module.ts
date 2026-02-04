@@ -18,6 +18,11 @@ class ServiceKfc {
           break
         }
 
+        case 'markdown': {
+          ctx.response.body = `# 🍗 疯狂星期四文案\n\n${result}\n\n---\n\n*v50 文案第 ${list.findIndex((item: string) => item === result) + 1} 条*`
+          break
+        }
+
         case 'json':
         default: {
           ctx.response.body = Common.buildJson({
@@ -40,6 +45,8 @@ class ServiceKfc {
       path: 'static/v50.json',
       alternatives: [`https://v50.deno.dev/list`],
     })
+
+    if (!response) return []
 
     const data = (await response.json()) as string[]
 

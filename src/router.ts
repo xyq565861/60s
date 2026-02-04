@@ -2,6 +2,7 @@ import { Router } from '@oak/oak/router'
 import { Common } from './common.ts'
 
 import { service60s } from './modules/60s.module.ts'
+import { service60sRss } from './modules/60s-rss.module.ts'
 import { serviceAINews } from './modules/ai-news.module.ts'
 import { serviceAnswer } from './modules/answer/answer.module.ts'
 import { serviceAwesomeJs } from './modules/awesome-js/awesome-js.module.ts'
@@ -25,6 +26,7 @@ import { serviceLunar } from './modules/lunar/lunar.module.ts'
 import { serviceMaoyan } from './modules/maoyan/maoyan.module.ts'
 import { serviceNcm } from './modules/ncm.module.ts'
 import { serviceOG } from './modules/og.module.ts'
+import { serviceQQ } from './modules/qq.module.ts'
 import { serviceQRCode } from './modules/qrcode/qrcode.module.ts'
 import { serviceTodayInHistory } from './modules/today-in-history.module.ts'
 import { serviceToutiao } from './modules/toutiao.module.ts'
@@ -40,8 +42,16 @@ import { serviceHealth } from './modules/health.module.ts'
 import { servicePassword } from './modules/password/password.module.ts'
 import { serviceColor } from './modules/color.module.ts'
 import { serviceKuan } from './modules/kuan.module.ts'
+import { serviceLyric } from './modules/lyric.module.ts'
+import { serviceMoyu } from './modules/moyu.module.ts'
+import { serviceFuelPrice } from './modules/fuel-price/fuel-price.module.ts'
+import { GoldPriceService } from './modules/gold-price.module.ts'
+import { serviceQuark } from './modules/quark.module.ts'
+import { serviceWhois } from './modules/whois.module.ts'
 
 // import { serviceSlackingCalendar } from './modules/slacking-calendar/slacking-calendar.module.ts'
+
+const serviceGoldPrice = new GoldPriceService()
 
 export const rootRouter = new Router()
 
@@ -66,6 +76,7 @@ export const appRouter = new Router({
 
 // === 以下为已发布的正式接口 ===
 appRouter.get('/60s', service60s.handle())
+appRouter.get('/60s/rss', service60sRss.handle())
 appRouter.get('/answer', serviceAnswer.handle())
 appRouter.get('/baike', serviceBaike.handle())
 appRouter.get('/bili', serviceBili.handle())
@@ -92,6 +103,8 @@ appRouter.get('/qrcode', serviceQRCode.handle())
 appRouter.get('/dad-joke', serviceDadJoke.handle())
 appRouter.get('/rednote', serviceRednote.handle())
 appRouter.get('/dongchedi', serviceDongchedi.handle())
+appRouter.get('/moyu', serviceMoyu.handle())
+appRouter.get('/quark', serviceQuark.handle())
 
 appRouter.get('/health', serviceHealth.handle())
 appRouter.get('/password', servicePassword.handle())
@@ -119,15 +132,21 @@ appRouter.get('/ncm-rank/:id', serviceNcm.handleRankDetail())
 appRouter.get('/color/random', serviceColor.handle())
 appRouter.get('/color/palette', serviceColor.handlePalette())
 
+appRouter.all('/lyric', serviceLyric.handle())
+appRouter.all('/fuel-price', serviceFuelPrice.handle())
+appRouter.get('/gold-price', serviceGoldPrice.handle())
+
 // === 以下为支持 body 解析参数的接口 ===
 appRouter.all('/og', serviceOG.handle())
 appRouter.all('/hash', serviceHash.handle())
 
 appRouter.all('/fanyi', serviceFanyi.handle())
 appRouter.all('/fanyi/langs', serviceFanyi.handleLangs())
+appRouter.get('/whois', serviceWhois.handle())
 
 // === 以下为测试接口，beta 前缀，接口可能不稳定 ===
 appRouter.get('/beta/kuan', serviceKuan.handle())
+appRouter.get('/beta/qq/profile', serviceQQ.handle())
 
 // === 以下为待定接口，还在计划、开发中 ===
 // appRouter.get('/slacking-calendar', serviceSlackingCalendar.handle())
